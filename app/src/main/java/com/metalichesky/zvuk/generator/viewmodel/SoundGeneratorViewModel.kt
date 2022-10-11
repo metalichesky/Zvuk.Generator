@@ -134,4 +134,9 @@ class SoundGeneratorViewModel @Inject constructor(
         }
     }
 
+    override fun onCleared() {
+        stop()
+        super.onCleared()
+    }
+
 }
