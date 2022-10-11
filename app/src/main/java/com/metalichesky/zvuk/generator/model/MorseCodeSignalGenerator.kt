@@ -102,6 +102,7 @@ class MorseCodeSignalGenerator @Inject constructor() {
 //                Log.d(LOG_TAG, "symbol ${symbol} sequence ${sequence}")
 
                 while (paused && isActive) { /*stuck in loop to pause*/
+                    delay(10)
 //                    Log.d(LOG_TAG, "paused")
                 }
 
