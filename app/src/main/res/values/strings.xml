@@ -1,0 +1,26 @@
+<resources>
+
+    <string name="app_name">Zvuk.Generator</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="waveform_type">Waveform type</string>
+    <string name="waveform_sine">Sine</string>
+    <string name="waveform_triangle">Triangle</string>
+    <string name="waveform_saw_tooth">Saw Tooth</string>
+    <string name="waveform_square">Square</string>
+
+    <string name="noise_type">Noise type</string>
+    <string name="noise_brown">Brown</string>
+    <string name="noise_pink">Pink</string>
+    <string name="noise_white">White</string>
+    <string name="noise_blue">Blue</string>
+    <string name="noise_violet">Violet</string>
+
+    <string name="frequency">Frequency %s Hz</string>
+    <string name="volume">Volume %s Db</string>
+    <string name="noise_volume">Noise volume %s Db</string>
+    <string name="morse_speed">Speed %s words per minute</string>
+    <string name="morse_text_size">Text size %s words</string>
+
+    <string name="alphabet_name">Alphabet name</string>
+</resources>
