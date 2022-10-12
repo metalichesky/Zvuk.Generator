@@ -1,5 +1,7 @@
 package com.metalichesky.zvuk.audio.math
 
+import kotlin.math.absoluteValue
+
 
 object MathUtil {
     private const val INT_BITS_COUNT = 32
@@ -50,6 +52,10 @@ object MathUtil {
         maxBit = maxBit shl 1
         return maxBit
     }
+}
+
+fun Float.equalsAlmost(other: Float, delta: Float): Boolean {
+    return (this - other).absoluteValue <= delta
 }
 
 fun Float.clamp(from: Float, to: Float): Float {

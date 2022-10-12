@@ -24,7 +24,7 @@ object AudioMixer {
         var result = 0f
         val endIdx = Math.min(Math.min(channel1.size, channel2.size), resultArray.size)
         while(resultIdx < endIdx) {
-            result = (channel1[resultIdx] + channel2[resultIdx]) * 0.5f
+            result = (channel1[resultIdx] + channel2[resultIdx])
             resultArray[resultIdx] = result
             resultIdx++
         }
@@ -46,7 +46,7 @@ object AudioMixer {
         var result: Short = 0
         val endIdx = Math.min(Math.min(channel1.size, channel2.size), resultArray.size)
         while(resultIdx < endIdx) {
-            result = ((channel1[resultIdx] + channel2[resultIdx]) shr 1).toShort()
+            result = (channel1[resultIdx] + channel2[resultIdx]).toShort()
             resultArray[resultIdx] = result
             resultIdx++
         }

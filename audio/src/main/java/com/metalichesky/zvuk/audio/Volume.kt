@@ -1,5 +1,6 @@
 package com.metalichesky.zvuk.audio
 
+import com.metalichesky.zvuk.audio.math.equalsAlmost
 import kotlin.math.log
 import kotlin.math.pow
 
@@ -12,16 +13,17 @@ class Volume {
         fun fromDb(db: Float): Volume {
             return Volume().apply {
                 val ratio = 10f.pow(db / 10f) * VOLUME_MIN_RATIO
-                this.internal = ratio.clamp(0f, VOLUME_MAX_RATIO)
+                this.internal = ratio.coerceIn(0f, VOLUME_MAX_RATIO)
             }
         }
 
         fun fromRatio(ratio: Float): Volume {
             return Volume().apply {
-                this.internal = ratio.clamp(0f, VOLUME_MAX_RATIO)
+                this.internal = ratio.coerceIn(0f, VOLUME_MAX_RATIO)
             }
         }
     }
+
     private var internal = 0f
 
     private constructor()
@@ -33,14 +35,17 @@ class Volume {
     fun getRatio(): Float {
         return internal
     }
+
+    fun isMin(): Boolean {
+        return internal.equalsAlmost(VOLUME_MIN_RATIO, Float.MIN_VALUE)
+    }
+
+    fun isMax(): Boolean {
+        return internal.equalsAlmost(VOLUME_MAX_RATIO, Float.MIN_VALUE)
+    }
+
 }
 
-fun Float.clamp(min: Float, max: Float): Float {
-    return if (this < min) {
-        min
-    } else if (this > max) {
-        max
-    } else {
-        this
-    }
-}
+fun Float.asVolumeDb(): Volume = Volume.fromDb(this)
+
+fun Float.asVolumeRatio(): Volume = Volume.fromRatio(this)

@@ -19,9 +19,6 @@ import kotlin.system.measureTimeMillis
 
 @Singleton
 class MorseCodeSignalGenerator @Inject constructor() {
-    companion object {
-        const val LOG_TAG = "MorseCodeGenerator"
-    }
 
     private val frequencyGenerator = FrequencyGenerator()
     private val silenceGenerator = SilenceGenerator()
@@ -72,7 +69,7 @@ class MorseCodeSignalGenerator @Inject constructor() {
     }
 
     fun addText(text: SymbolsText) {
-        text.symbols.forEachIndexed { index, symbol ->
+        text.symbols.forEachIndexed { _, symbol ->
             symbolsStack.offer(symbol)
         }
     }
@@ -86,6 +83,7 @@ class MorseCodeSignalGenerator @Inject constructor() {
         startPadding = true
         endPadding = true
         generatorJob = coroutineScope.launch(Dispatchers.Default) {
+            listener?.onStarted()
 //            Log.d(LOG_TAG, "start generator")
             while (isActive) {
 //                Log.d(LOG_TAG, "generator isActive symbols ${symbolsStack.size}")
@@ -101,23 +99,37 @@ class MorseCodeSignalGenerator @Inject constructor() {
 //                    soundSequence.joinToString { "beep = ${it.silence} pause ${it.unitDuration}" }
 //                Log.d(LOG_TAG, "symbol ${symbol} sequence ${sequence}")
 
-                while (paused && isActive) { /*stuck in loop to pause*/
-                    delay(10)
+                if (paused) {
+                    listener?.onPaused()
+                    while (paused && isActive) { /*stuck in loop to pause*/
+                        delay(10)
 //                    Log.d(LOG_TAG, "paused")
+                    }
+                    if (isActive) {
+                        listener?.onResumed()
+                    }
                 }
 
                 if (startPadding) {
                     startPadding = false
                     val paddingBuffer = dataTransformer.generateFloatArray(currentSignalPaddingMs.toFloat())
-                    noiseGenerator.generateNoise(
-                        paddingBuffer,
-                        currentNoiseType,
-                        currentNoiseVolume.getRatio()
-                    )
+
+                    if (!currentNoiseVolume.isMin()) {
+                        noiseGenerator.generateNoise(
+                            paddingBuffer,
+                            currentNoiseType,
+                            currentNoiseVolume.getRatio()
+                        )
+                    } else {
+                        silenceGenerator.generate(
+                            paddingBuffer
+                        )
+                    }
+
                     sendDataToAllChannels(dataTransformer.floatArrayToByteArray(paddingBuffer))
                 }
 
-                soundSequence.forEachIndexed { idx, sound ->
+                soundSequence.forEachIndexed { _, sound ->
                     val duration = (sound.unitDuration * unit).roundToLong()
 
                     val generatorTake = measureTimeMillis {
@@ -133,12 +145,16 @@ class MorseCodeSignalGenerator @Inject constructor() {
                         } else {
                             silenceGenerator.generate(audioBuffer)
                         }
-                        noiseGenerator.generateNoise(
-                            noiseBuffer,
-                            currentNoiseType,
-                            currentNoiseVolume.getRatio()
-                        )
-                        AudioMixer.mix(audioBuffer, noiseBuffer, audioBuffer)
+                        // generate noise and mix to audio is noise volume isn't minimal
+                        if (!currentNoiseVolume.isMin()) {
+                            noiseGenerator.generateNoise(
+                                noiseBuffer,
+                                currentNoiseType,
+                                currentNoiseVolume.getRatio()
+                            )
+                            AudioMixer.mix(audioBuffer, noiseBuffer, audioBuffer)
+                        }
+
                         sendDataToAllChannels(dataTransformer.floatArrayToByteArray(audioBuffer))
                     }
                     val delayDuration = duration - generatorTake + DELAY_FIX
@@ -150,13 +166,22 @@ class MorseCodeSignalGenerator @Inject constructor() {
                 if (endPadding) {
                     endPadding = false
                     val paddingBuffer = dataTransformer.generateFloatArray(currentSignalPaddingMs.toFloat())
-                    noiseGenerator.generateNoise(
-                        paddingBuffer,
-                        currentNoiseType,
-                        currentNoiseVolume.getRatio()
-                    )
+                    if (!currentNoiseVolume.isMin()) {
+                        noiseGenerator.generateNoise(
+                            paddingBuffer,
+                            currentNoiseType,
+                            currentNoiseVolume.getRatio()
+                        )
+                    } else {
+                        silenceGenerator.generate(
+                            paddingBuffer
+                        )
+                    }
                     sendDataToAllChannels(dataTransformer.floatArrayToByteArray(paddingBuffer))
                 }
+            }
+            if (!isActive) {
+                listener?.onStopped()
             }
             listener?.onCompleted()
 //            Log.d(LOG_TAG, "end generator")
@@ -191,6 +216,14 @@ class MorseCodeSignalGenerator @Inject constructor() {
 
     interface Listener {
 
+        fun onStarted()
+
+        fun onStopped()
+
+        fun onPaused()
+
+        fun onResumed()
+
         fun onCompleted()
 
     }
@@ -198,4 +231,4 @@ class MorseCodeSignalGenerator @Inject constructor() {
 }
 
 private const val DELAY_FIX = -1L
-
+private const val LOG_TAG = "MorseCodeGenerator"

@@ -253,7 +253,7 @@ class SoundGeneratorFragment : Fragment() {
         }
     }
 
-    private fun showGroupsPerMinute(groupsPerMinute: Float) {
+    private fun showGroupsPerMinute(groupsPerMinute: Float?) {
         groupsPerMinute ?: return
         binding?.apply {
             val gpm = String.format("%.2f", groupsPerMinute)
@@ -261,7 +261,7 @@ class SoundGeneratorFragment : Fragment() {
         }
     }
 
-    private fun showTextSize(groups: Int) {
+    private fun showTextSize(groups: Int?) {
         groups ?: return
         binding?.apply {
             val g = String.format("%d", groups)

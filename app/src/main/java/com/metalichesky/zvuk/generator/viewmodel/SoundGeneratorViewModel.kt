@@ -21,9 +21,6 @@ class SoundGeneratorViewModel @Inject constructor(
     private val generatorInteractor: MorseGeneratorInteractor,
     private val alphabetInteractor: AlphabetInteractor
 ) : ViewModel() {
-    companion object {
-        const val LOG_TAG = "SoundGeneratorViewModel"
-    }
 
     val playing = generatorInteractor.playingFlow
 
@@ -140,3 +137,5 @@ class SoundGeneratorViewModel @Inject constructor(
     }
 
 }
+
+private const val LOG_TAG = "SoundGeneratorViewModel"

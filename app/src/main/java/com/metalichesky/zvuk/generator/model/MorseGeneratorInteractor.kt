@@ -9,6 +9,7 @@ import com.metalichesky.zvuk.audio.Channel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,37 +23,55 @@ class MorseGeneratorInteractor @Inject constructor(
     private val samplesPlayer: SamplesPlayer = SamplesPlayer()
 
     private val generatorListener = object: MorseCodeSignalGenerator.Listener {
-        override fun onCompleted() {
-            pause()
+
+        override fun onStarted() {
+
         }
+
+        override fun onPaused() {
+
+        }
+
+        override fun onResumed() {
+
+        }
+
+        override fun onStopped() {
+
+        }
+
+        override fun onCompleted() {
+            this@MorseGeneratorInteractor.onCompleted()
+        }
+
     }
 
     var job: Job? = null
     var channel: Channel? = null
 
     private val playing = MutableStateFlow<Boolean>(false)
-    val playingFlow: StateFlow<Boolean> = playing
+    val playingFlow: StateFlow<Boolean> = playing.asStateFlow()
 
-    private val volume = MutableStateFlow(Volume.fromRatio(1f))
-    val volumeFlow: StateFlow<Volume> = volume
+    private val volume = MutableStateFlow(Constants.DEFAULT_VOLUME)
+    val volumeFlow: StateFlow<Volume> = volume.asStateFlow()
 
-    private val noiseVolume = MutableStateFlow<Volume>(Volume.fromRatio(0.5f))
-    val noiseVolumeFlow: StateFlow<Volume> = noiseVolume
+    private val noiseVolume = MutableStateFlow<Volume>(Constants.DEFAULT_NOISE_VOLUME)
+    val noiseVolumeFlow: StateFlow<Volume> = noiseVolume.asStateFlow()
 
-    private val frequency = MutableStateFlow<Float>(300f)
-    val frequencyFlow: StateFlow<Float> = frequency
+    private val frequency = MutableStateFlow<Float>(Constants.DEFAULT_FREQUENCY)
+    val frequencyFlow: StateFlow<Float> = frequency.asStateFlow()
 
-    private val waveformType = MutableStateFlow<WaveformType>(WaveformType.SINE)
-    val waveformTypeFlow: StateFlow<WaveformType> = waveformType
+    private val waveformType = MutableStateFlow<WaveformType>(Constants.DEFAULT_WAVEFORM)
+    val waveformTypeFlow: StateFlow<WaveformType> = waveformType.asStateFlow()
 
-    private val noiseType = MutableStateFlow<NoiseType>(NoiseType.PINK)
-    val noiseTypeFlow: StateFlow<NoiseType> = noiseType
+    private val noiseType = MutableStateFlow<NoiseType>(Constants.DEFAULT_NOISE_TYPE)
+    val noiseTypeFlow: StateFlow<NoiseType> = noiseType.asStateFlow()
 
-    private val groupsPerMinute = MutableStateFlow<Float>(12f)
-    val groupsPerMinuteFlow: StateFlow<Float> = groupsPerMinute
+    private val groupsPerMinute = MutableStateFlow<Float>(Constants.DEFAULT_GROUPS_PER_MINUTE)
+    val groupsPerMinuteFlow: StateFlow<Float> = groupsPerMinute.asStateFlow()
 
     private val textSize = MutableStateFlow<Int>(Constants.DEFAULT_TEXT_SIZE)
-    val textSizeFlow: StateFlow<Int> = textSize
+    val textSizeFlow: StateFlow<Int> = textSize.asStateFlow()
 
     init {
         generator.listener = generatorListener
@@ -73,6 +92,8 @@ class MorseGeneratorInteractor @Inject constructor(
             generator.clear()
             generator.addAlphabet(alphabet)
             generator.addText(text)
+
+            updateGenerator()
 
             channel = generator.addReceiver()
 
@@ -107,6 +128,15 @@ class MorseGeneratorInteractor @Inject constructor(
     fun stop() {
         pause()
         samplesPlayer.stop()
+    }
+
+    private fun onCompleted() {
+        coroutineScope.launch(Dispatchers.Default) {
+            job?.cancel()
+            withContext(Dispatchers.Main) {
+                playing.value = false
+            }
+        }
     }
 
     private fun updateGenerator() {
