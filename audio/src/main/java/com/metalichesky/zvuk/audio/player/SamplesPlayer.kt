@@ -2,8 +2,9 @@ package com.metalichesky.zvuk.audio.player
 
 import android.media.AudioAttributes
 import android.media.AudioFormat
-import android.media.AudioManager
 import android.media.AudioTrack
+import android.media.audiofx.AudioEffect
+import android.media.audiofx.BassBoost
 import android.util.Log
 import com.metalichesky.zvuk.audio.AudioParams
 import kotlinx.coroutines.CoroutineScope
@@ -15,12 +16,15 @@ import java.nio.ByteBuffer
 import kotlin.system.measureTimeMillis
 
 
-class SamplesPlayer {
+class SamplesPlayer(
+    private val audioSessionManager: AudioSessionManager
+) {
     companion object {
         private const val LOG_TAG = "SamplesPlayer"
     }
 
     private var audioPlayer: AudioTrack? = null
+    private var audioEffect: AudioEffect? = null
     private var mThread: Thread? = null
 
     private var byteData: ByteBuffer? = null
@@ -105,17 +109,40 @@ class SamplesPlayer {
             .setSampleRate(audioParams.sampleRate)
             .setChannelMask(getChannelsMask(audioParams.channelsCount))
             .build()
-        val audioTrack = AudioTrack(
-            audioAttributes,
-            format,
-            bufferSize,
-            AudioTrack.MODE_STREAM,
-            AudioManager.AUDIO_SESSION_ID_GENERATE
-        )
-        if (audioTrack == null) {
-            Log.e("AudioTrack", "audio track is not initialised ")
-            return null
+        val audioSessionId = audioSessionManager.generateAudioSessionId()
+        Log.d("AudioTrack", "audio session id $audioSessionId")
+        val audioTrack = try {
+            AudioTrack(
+                audioAttributes,
+                format,
+                bufferSize,
+                AudioTrack.MODE_STREAM,
+                audioSessionId
+            )
+        } catch (t: Throwable) {
+            Log.e("AudioTrack", "audio track is not initialised ", t)
+            null
+
         }
+        audioTrack ?: return null
+
+        audioEffect = try {
+            BassBoost(0, audioSessionId).also {
+                it.setStrength(1000)
+            }
+        } catch (t: Throwable) {
+            null
+        }
+
+        audioEffect?.setEnableStatusListener { _, isEnabled ->
+            Log.d(LOG_TAG, "audio effect enabled $isEnabled")
+        }
+        audioEffect?.setControlStatusListener { audioEffect, isControl ->
+            Log.d(LOG_TAG, "audio effect control $isControl")
+        }
+        audioEffect?.enabled = true
+        Log.d(LOG_TAG, "audio effect enable ${audioEffect?.enabled}")
+        this.audioEffect = audioEffect
 
         byteData = ByteBuffer.allocate(bufferSize * 2)
         Log.d(
@@ -248,38 +275,12 @@ class SamplesPlayer {
         audioPlayer?.stop()
         audioPlayer?.release()
         audioPlayer = null
+        audioEffect?.release()
+        audioEffect = null
     }
 
 
     interface PlaybackListener {
         fun onNeedFillBuffer(byteData: ByteBuffer?)
     }
-}
-
-fun main() {
-
-    val bufferSize = 20
-    var buffer = ByteBuffer.allocate(bufferSize)
-
-    val arraySize = 10
-    val byteArray = ByteArray(arraySize)
-    for (i in byteArray.indices) {
-        byteArray[i] = i.toByte()
-    }
-
-    var arrayFromBuffer = buffer.array()
-
-    val player = SamplesPlayer()
-    val minBufferSize = player.getBinBufferSize()
-
-    println("buffer position ${buffer.position()} limit ${buffer.limit()} data ${arrayFromBuffer.joinToString()}")
-
-    buffer.put(byteArray)
-
-    println("buffer position ${buffer.position()} limit ${buffer.limit()} data ${arrayFromBuffer.joinToString()}")
-
-    buffer.put(byteArray)
-
-    println("buffer position ${buffer.position()} limit ${buffer.limit()} data ${arrayFromBuffer.joinToString()}")
-
 }

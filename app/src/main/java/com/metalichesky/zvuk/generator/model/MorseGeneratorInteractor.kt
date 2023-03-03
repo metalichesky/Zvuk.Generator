@@ -6,6 +6,7 @@ import com.metalichesky.zvuk.audio.WaveformType
 import com.metalichesky.zvuk.audio.player.SamplesPlayer
 import com.metalichesky.zvuk.generator.Constants
 import com.metalichesky.zvuk.audio.Channel
+import com.metalichesky.zvuk.audio.player.AudioSessionManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,10 +18,11 @@ import javax.inject.Singleton
 class MorseGeneratorInteractor @Inject constructor(
     private val coroutineScope: CoroutineScope,
     private val alphabetRepo: AlphabetRepo,
-    private val generator: MorseCodeSignalGenerator
+    private val generator: MorseCodeSignalGenerator,
+    private val audioSessionManager: AudioSessionManager
 ) {
 
-    private val samplesPlayer: SamplesPlayer = SamplesPlayer()
+    private val samplesPlayer: SamplesPlayer = SamplesPlayer(audioSessionManager)
 
     private val generatorListener = object: MorseCodeSignalGenerator.Listener {
 
